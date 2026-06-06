@@ -20,7 +20,7 @@ local CONFIG = {
         {MinLevel = 276, MaxLevel = 449, NpcName = "Young Joseph",   QuestText = "Pillerman [Lvl. 275+]",      MobName = "Pillerman"},
         {MinLevel = 450, MaxLevel = 999, NpcName = "DIO OVA",        QuestText = "Jotaro OVA [Lvl. 450+]",     MobName = "Jotaro OVA"},
     },
-    BossNames = {"Jotaro Over Heaven", "Alternate Jotaro Part 4", "JohnnyJoestar", "Giorno Giovanna Requiem"},
+    BossNames = {"Jotaro Over Heaven", "Alternate Jotaro Part 4", "JohnnyJoestar", "Giorno Giovanna Requiem", "Dio Over Heaven"},
     StandValues = {
         ["King Crimson"] = "KingCrimson",
         ["Crazy Diamond"] = "CrazyDiamond",
@@ -134,6 +134,17 @@ function findMob(name)
     return nil
 end
 
+-- หาตัวสุดท้ายที่ชื่อตรง (สำหรับบอสที่มีมอนชื่อเหมือนกัน เช่น Dio Over Heaven)
+function findMobLast(name)
+    local result = nil
+    for _, mob in ipairs(Services.Workspace.Living:GetChildren()) do
+        if mob.Name == name and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            result = mob
+        end
+    end
+    return result
+end
+
 function standUp()
     local char = getChar()
     if char then char.Humanoid.Sit = false end
@@ -156,7 +167,7 @@ function useSkills(char, skillNames, useAll)
     end
 end
 
-function useItem(itemName)
+function useItem(itemName, keepEquipped)
     local char = getChar()
     if not char then return false end
     local tool = LocalPlayer.Backpack:FindFirstChild(itemName)
@@ -171,8 +182,11 @@ function useItem(itemName)
     task.wait(1)
     local pp = item:FindFirstChildOfClass("ProximityPrompt")
     if pp then pcall(function() fireproximityprompt(pp, 1) end) end
-    task.wait(0.3)
-    char.Humanoid:UnequipTools()
+    -- ถ้า keepEquipped = true ไม่ถอดออก (รอให้ dialog จัดการก่อน)
+    if not keepEquipped then
+        task.wait(0.3)
+        char.Humanoid:UnequipTools()
+    end
     return true
 end
 
@@ -470,32 +484,45 @@ TabBoss:CreateToggle({
                 notify("Error", "เลือกบอสก่อนสิ!")
                 isBoss = false; return
             end
-            farmThreads.boss = task.spawn(function()
-                while isBoss do
-                    local char = getChar()
-                    if not char then task.wait(1); continue end
-                    local found = false
-                    for _, bossName in ipairs(selectedBosses) do
-                        local boss = findMob(bossName)
-                        if boss then
-                            found = true
-                            local root = boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
-                            if root then
-                                tp(root.CFrame * CFrame.new(0,12,0) * CFrame.Angles(math.rad(-90),0,0))
-                                if char:FindFirstChild("Aura") and not char.Aura.Value then fire(char.StandEvents.Summon) end
-                                useSkills(char, selectedSkills, useAllSkills)
-                            end
+            local bossHeartbeat
+            bossHeartbeat = game:GetService("RunService").Heartbeat:Connect(function()
+                if not isBoss then
+                    bossHeartbeat:Disconnect()
+                    standUp()
+                    return
+                end
+                local char = getChar()
+                if not char then return end
+
+                local found = false
+                for _, bossName in ipairs(selectedBosses) do
+                    -- ใช้ findMobLast เพื่อหาบอส (ตัวล่างสุด) กรณีมีมอนชื่อเหมือนกัน
+                    local boss = findMobLast(bossName)
+                    if boss and boss.PrimaryPart then
+                        found = true
+                        -- ใช้ tpToMob เหมือน Quest Farm
+                        tpToMob(boss, 12)
+                        -- เรียกสแตนด์ + ใช้สกิล
+                        if char:FindFirstChild("Aura") and not char.Aura.Value then
+                            pcall(function() fire(char.StandEvents.Summon) end)
                         end
+                        useSkills(char, selectedSkills, useAllSkills)
+                        break -- ตีทีละตัว
                     end
-                    if not found then
-                        tp(char.HumanoidRootPart.CFrame + Vector3.new(0,50,0))
-                        task.wait(3)
-                    end
-                    task.wait()
+                end
+
+                if not found then
+                    -- รอบอสเกิดใหม่
+                    task.wait(0.5)
                 end
             end)
+            farmThreads.boss = bossHeartbeat
         else
-            if farmThreads.boss then task.cancel(farmThreads.boss) end
+            isBoss = false
+            if farmThreads.boss then
+                pcall(function() farmThreads.boss:Disconnect() end)
+                farmThreads.boss = nil
+            end
             standUp()
         end
     end
@@ -594,7 +621,7 @@ TabStand:CreateToggle({
                                 for _, obj in ipairs(gui:GetDescendants()) do
                                     if obj:IsA("TextButton") then
                                         local txt = obj.Text:lower()
-                                        if txt == "yes" or txt == "confirm" or txt == "ยืนยัน" then
+                                        if txt:find("yes") or txt == "confirm" or txt == "ยืนยัน" then
                                             btn = obj
                                         end
                                     end
@@ -604,8 +631,22 @@ TabStand:CreateToggle({
                     until btn ~= nil or waited >= 4
 
                     if not btn then return end
+
+                    -- รอ 2.5 วิ ให้เกมปลดล็อคปุ่ม
                     task.wait(2.5)
+
+                    -- ลองกดทุกวิธี
                     pcall(function() btn.MouseButton1Click:Fire() end)
+                    task.wait(0.1)
+                    pcall(function() btn.Activated:Fire() end)
+                    task.wait(0.1)
+                    -- simulate real mouse click ผ่าน position
+                    pcall(function()
+                        local pos = btn.AbsolutePosition + btn.AbsoluteSize / 2
+                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
+                        task.wait(0.05)
+                        game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, false, game, 0)
+                    end)
                     task.wait(0.5)
                 end
 
@@ -632,7 +673,8 @@ TabStand:CreateToggle({
                             isStand = false; return
                         end
 
-                        local roka = useItem("Rokakaka")
+                        -- กิน Rokakaka แบบ keepEquipped รอ dialog ก่อนถอด
+                        local roka = useItem("Rokakaka", true)
                         if not roka then
                             if not switchStandToEmptySlot() then
                                 notify("Error", "ไม่มี Rokakaka หรือ Slot ว่าง!")
@@ -643,6 +685,10 @@ TabStand:CreateToggle({
                         if needsConfirm(curAttr) then
                             handleConfirmDialog()
                         end
+
+                        -- ถอด Rokakaka หลัง dialog ปิดแล้ว
+                        local char2 = getChar()
+                        if char2 then char2.Humanoid:UnequipTools() end
 
                         waitUntilStand(function() return data.Stand.Value == "None" end, 8)
                         if data.Stand.Value ~= "None" then
@@ -705,8 +751,19 @@ end
 -- ==============================
 local TabDungeon = Window:CreateTab("Dungeon", 4483362458)
 
+-- Dungeon data (อิงจาก EduHub u259) + เพิ่ม Beach Lair
+local DUNGEON_DATA = {
+    ["Dungeon [Lvl.15+]"]  = {npcName="i_stabman", npcText="i_stabman [Lvl. 15+]",  bossName="Bad Gi Boss",        range=7,  loadCFrame=CFrame.new(-13445.3252,-60.2168045,-2222.99097,-1,0,0,0,1,0,0,0,-1)},
+    ["Dungeon [Lvl.40+]"]  = {npcName="i_stabman", npcText="i_stabman [Lvl. 40+]",  bossName="Dio [Dungeon]",      range=10, loadCFrame=CFrame.new(-13475.2158,-62.0921021,-2217.27539,-1,0,0,0,1,0,0,0,-1)},
+    ["Dungeon [Lvl.80+]"]  = {npcName="i_stabman", npcText="i_stabman [Lvl. 80+]",  bossName="Homeless Lord",      range=12, loadCFrame=CFrame.new(-13219.7607,-64.0739975,-2350.44189,-1.1920929e-7,0,1.00000012,0,1,0,-1.00000012,0,-1.1920929e-7)},
+    ["Dungeon [Lvl.100+]"] = {npcName="i_stabman", npcText="i_stabman [Lvl. 100+]", bossName="Diavolo [Dungeon]",  range=10, loadCFrame=CFrame.new(-13336.2656,-63.1334457,-2391.11108,-1,0,0,0,1,0,0,0,-1)},
+    ["Dungeon [Lvl.200+]"] = {npcName="i_stabman", npcText="i_stabman [Lvl. 200+]", bossName="Jotaro P6 [Dungeon]",range=15, loadCFrame=CFrame.new(-4.18469238,33.3382645,-132.123505,-1,0,0,0,1,0,0,0,-1)},
+    ["Beach Lair [Lvl.50+]"] = {npcName="fidydoid1", npcText="Event Lair Quest",     bossName="Boss",               range=10, loadCFrame=CFrame.new(-869.508,67.526,-909.858,1,0,0,0,1,0,0,0,1)},
+}
+
 local dNames = {}
-for _, d in ipairs(CONFIG.Dungeons) do table.insert(dNames, d.Name) end
+for k, _ in pairs(DUNGEON_DATA) do table.insert(dNames, k) end
+table.sort(dNames)
 
 TabDungeon:CreateDropdown({
     Name = "Select Dungeon",
@@ -726,45 +783,146 @@ TabDungeon:CreateToggle({
                 notify("Error", "ปิดฟาร์มอื่นก่อนสิ!")
                 isDungeon = false; return
             end
-            farmThreads.dungeon = task.spawn(function()
-                local dungeonData
-                for _, d in ipairs(CONFIG.Dungeons) do
-                    if d.Name == selectedDungeon then dungeonData = d; break end
-                end
-                if not dungeonData then return end
-                local npc = findNPC("i_stabman", dungeonData.NpcText)
-                while isDungeon do
-                    local char = getChar()
-                    if not char then task.wait(1); continue end
-                    local questGui = LocalPlayer.PlayerGui:FindFirstChild("QuestGui")
-                    if questGui and questGui:FindFirstChild("Active") and questGui.Active.Value then
-                        local boss = findMob(dungeonData.BossName)
-                        if boss then
-                            local root = boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
-                            if root then
-                                tp(root.CFrame * CFrame.new(0,15,0) * CFrame.Angles(math.rad(-90),0,0))
-                                if char:FindFirstChild("Aura") and not char.Aura.Value then fire(char.StandEvents.Summon) end
-                                useSkills(char, selectedSkills, useAllSkills)
+            local dd = DUNGEON_DATA[selectedDungeon]
+            if not dd then
+                notify("Error", "ไม่เจอข้อมูล Dungeon ที่เลือก!")
+                isDungeon = false; return
+            end
+
+            local dungeonPhase = "NPC"   -- "NPC" หรือ "Boss"
+            local npcCFrame = nil        -- CFrame ของ NPC ที่เจอ
+            local loaded = false
+            local lastNpcTick = 0
+            local dungeonHeartbeat
+
+            -- หา NPC ดันเจี้ยน (อิงจาก EduHub u276)
+            local function findDungeonNPC()
+                for _, npc in ipairs(Services.Workspace.Map.NPCs:GetChildren()) do
+                    if npc.Name:find(dd.npcName) and npc:FindFirstChild("Head") then
+                        local main = npc.Head:FindFirstChild("Main")
+                        if main and main:FindFirstChild("Text") and main.Text.Text == dd.npcText then
+                            local hrp = npc:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                npcCFrame = hrp.CFrame + Vector3.new(0, 2, 2)
+                                return npc
                             end
-                        else
-                            task.wait(1)
-                        end
-                    else
-                        if npc then
-                            tp(npc.HumanoidRootPart.CFrame * CFrame.new(0,2,3))
-                            local pp = npc:FindFirstChildOfClass("ProximityPrompt")
-                            if pp then fireproximityprompt(pp, 20) end
-                            if npc:FindFirstChild("Done") then fire(npc.Done) end
-                            task.wait(2)
                         end
                     end
-                    task.wait()
+                end
+                return nil
+            end
+
+            -- หาบอสดันเจี้ยน (อิงจาก EduHub u283) ชื่อในเกมคือ "Boss" แต่ใช้ TextLabel เช็ค
+            local function findDungeonBoss()
+                for _, mob in ipairs(Services.Workspace.Living:GetChildren()) do
+                    if mob.Name == "Boss" and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+                        local head = mob:FindFirstChild("Head")
+                        if head and head:FindFirstChild("Display") and head.Display:FindFirstChild("Frame") then
+                            local lbl = head.Display.Frame:FindFirstChild("TextLabel") or head.Display.Frame:FindFirstChild("t")
+                            if lbl and lbl.Text == dd.bossName then
+                                return mob
+                            end
+                        end
+                    end
+                end
+                -- fallback: หาจากชื่อตรงๆ (dungeon ปกติ)
+                return findMob(dd.bossName)
+            end
+
+            -- เช็คเควสแอคทีฟ (เหมือน EduHub u270)
+            local function hasActiveQuest()
+                local qg = LocalPlayer.PlayerGui:FindFirstChild("QuestGui")
+                return qg and qg:FindFirstChild("Active") and qg.Active.Value or false
+            end
+
+            dungeonHeartbeat = game:GetService("RunService").Heartbeat:Connect(function()
+                if not isDungeon then
+                    dungeonHeartbeat:Disconnect()
+                    standUp()
+                    return
+                end
+
+                local char = getChar()
+                if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+                local hrp = char.HumanoidRootPart
+
+                -- โหลด CFrame ครั้งแรก (เหมือน EduHub)
+                if not loaded then
+                    pcall(function() hrp.CFrame = dd.loadCFrame end)
+                    loaded = true
+                    return
+                end
+
+                local now = tick()
+
+                if hasActiveQuest() or dungeonPhase == "Boss" then
+                    -- Phase Boss: ตีบอส
+                    if dungeonPhase == "Boss" then
+                        local boss = findDungeonBoss()
+                        if boss then
+                            tpToMob(boss, dd.range)
+                            if char:FindFirstChild("Aura") and not char.Aura.Value then
+                                pcall(function() fire(char.StandEvents.Summon) end)
+                            end
+                            useSkills(char, selectedSkills, useAllSkills)
+                        elseif now - lastNpcTick > 5 and npcCFrame then
+                            -- บอสตายแล้ว → กลับไปหา NPC
+                            pcall(function() hrp.CFrame = npcCFrame end)
+                            lastNpcTick = now
+                            local npc = findDungeonNPC()
+                            if npc and npc:FindFirstChild("QuestDone") then
+                                pcall(function() npc.QuestDone:FireServer() end)
+                            end
+                            dungeonPhase = "NPC"
+                        end
+                    end
+                else
+                    -- Phase NPC: ไปรับเควส
+                    local npc = findDungeonNPC()
+                    if npc and now - lastNpcTick > 1 then
+                        local nhrp = npc:FindFirstChild("HumanoidRootPart")
+                        if nhrp then
+                            pcall(function() hrp.CFrame = nhrp.CFrame + Vector3.new(0, 2, 2) end)
+                            lastNpcTick = now
+
+                            -- fire ProximityPrompt เพื่อเข้า dungeon (Beach Lair ใช้วิธีนี้)
+                            local pp = nhrp:FindFirstChildOfClass("ProximityPrompt")
+                                or npc:FindFirstChildOfClass("ProximityPrompt")
+                            if pp then
+                                pcall(function() fireproximityprompt(pp, 20) end)
+                            end
+
+                            -- fire Done รับเควส
+                            if npc:FindFirstChild("Done") then
+                                pcall(function() npc.Done:FireServer() end)
+                            end
+
+                            dungeonPhase = "Boss"
+                            -- รอ 5 วิให้เข้า dungeon ก่อนตีบอส (เหมือน EduHub task.wait(5))
+                            task.wait(5)
+                        end
+                    end
                 end
             end)
+
+            farmThreads.dungeon = dungeonHeartbeat
         else
-            if farmThreads.dungeon then task.cancel(farmThreads.dungeon) end
+            isDungeon = false
+            if farmThreads.dungeon then
+                pcall(function() farmThreads.dungeon:Disconnect() end)
+                farmThreads.dungeon = nil
+            end
             standUp()
         end
+    end
+})
+
+TabDungeon:CreateButton({
+    Name = "Refresh (หยุดค้าง)",
+    Callback = function()
+        local char = getChar()
+        if char then char.Humanoid.Sit = false end
+        notify("Dungeon", "Refresh แล้ว")
     end
 })
 
@@ -901,4 +1059,7 @@ TabSettings:CreateButton({
     end
 })
 
+-- ==============================
+--   เสร็จสิ้น
+-- ==============================
 notify("ควย", "ลองลั่น")

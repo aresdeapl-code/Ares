@@ -1,0 +1,904 @@
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+-- ==============================
+-- [ CONFIG ]
+-- ==============================
+local CONFIG = {
+    QuestLevels = {
+        {MinLevel = 1,   MaxLevel = 10,  NpcName = "Giorno",         QuestText = "Bad Gi [Lvl. 1+]",             MobName = "Bad Gi"},
+        {MinLevel = 11,  MaxLevel = 20,  NpcName = "Scared Noob",    QuestText = "Scary Monster [Lvl. 10+]",     MobName = "Scary Monster"},
+        {MinLevel = 21,  MaxLevel = 30,  NpcName = "Koichi",         QuestText = "Giorno Giovanna [Lvl. 20+]",   MobName = "Giorno Giovanna"},
+        {MinLevel = 31,  MaxLevel = 40,  NpcName = "aLLmemester",    QuestText = "Rker Dummy [Lvl. 30+]",        MobName = "Rker Dummy"},
+        {MinLevel = 41,  MaxLevel = 50,  NpcName = "Okayasu",        QuestText = "Yoshikage Kira [Lvl. 40+]",   MobName = "Yoshikage Kira"},
+        {MinLevel = 51,  MaxLevel = 75,  NpcName = "Joseph Joestar", QuestText = "Dio Over Heaven [Lvl. 50+]",  MobName = "Dio Over Heaven"},
+        {MinLevel = 76,  MaxLevel = 100, NpcName = "Josuke",         QuestText = "Angelo [Lvl. 75+]",           MobName = "Angelo"},
+        {MinLevel = 101, MaxLevel = 125, NpcName = "Rohan",          QuestText = "Alien [Lvl. 100+]",           MobName = "Alien"},
+        {MinLevel = 126, MaxLevel = 150, NpcName = "DIO",            QuestText = "Jotaro Part 4 [Lvl. 125+]",  MobName = "Jotaro Part 4"},
+        {MinLevel = 151, MaxLevel = 175, NpcName = "Muhammed Avdol", QuestText = "Kakyoin [Lvl. 150+]",         MobName = "Kakyoin"},
+        {MinLevel = 176, MaxLevel = 200, NpcName = "Giorno",         QuestText = "Jungle Bandit [Lvl. 175+]",  MobName = "Jungle Bandit"},
+        {MinLevel = 201, MaxLevel = 275, NpcName = "Zeppeli",        QuestText = "Sewer Vampire [Lvl. 200+]",  MobName = "Sewer Vampire"},
+        {MinLevel = 276, MaxLevel = 449, NpcName = "Young Joseph",   QuestText = "Pillerman [Lvl. 275+]",      MobName = "Pillerman"},
+        {MinLevel = 450, MaxLevel = 999, NpcName = "DIO OVA",        QuestText = "Jotaro OVA [Lvl. 450+]",     MobName = "Jotaro OVA"},
+    },
+    BossNames = {"Jotaro Over Heaven", "Alternate Jotaro Part 4", "JohnnyJoestar", "Giorno Giovanna Requiem"},
+    StandValues = {
+        ["King Crimson"] = "KingCrimson",
+        ["Crazy Diamond"] = "CrazyDiamond",
+        ["Hierophant Green"] = "HG",
+        ["Silver Chariot"] = "SilverChariot",
+        ["The World"] = "TheWorld",
+        ["Dio's The World"] = "DTW",
+        ["Star Platinum"] = "StarPlatinum",
+        ["Killer Queen"] = "KillerQueen",
+        ["Dirty Deeds Done Dirt Cheap"] = "D4C",
+        ["White Snake"] = "WhiteSnake",
+        ["Golden Experience"] = "GE",
+        ["Tusk Act1"] = "TA1",
+        ["The Hand"] = "TheHand",
+        ["Cream"] = "Cream",
+        ["Diver Down"] = "DiverDown",
+        ["Jotaro's Star Platinum"] = "JotarosStarPlatinum",
+        ["Magician's Red"] = "MR",
+        ["Sticky Fingers"] = "StickyFingers",
+        ["Premier Macho"] = "PM",
+        ["Putrid Whine"] = "PutridWhine",
+        ["Silver Chariot OVA"] = "SCOVA",
+        ["Star Platinum OVA"] = "StarPlatinumOVA",
+        ["The World OVA"] = "TWOVA",
+        ["Stone Free"] = "StoneFree",
+        ["The World Alternate Universe"] = "TWAU",
+        ["Soft And Wet"] = "SoftAndWet",
+    },
+    AttributesWanted = {"Godly","Daemon","Invincible","Legendary","Powerful","Ascended","Helpful","Buns","Glass Cannon","Hacker"},
+    Dungeons = {
+        {Name = "Dungeon [Lvl.15+]",  NpcText = "i_stabman [Lvl. 15+]",  BossName = "Bad Gi Boss"},
+        {Name = "Dungeon [Lvl.40+]",  NpcText = "i_stabman [Lvl. 40+]",  BossName = "Dio [Dungeon]"},
+        {Name = "Dungeon [Lvl.80+]",  NpcText = "i_stabman [Lvl. 80+]",  BossName = "Homeless Lord"},
+        {Name = "Dungeon [Lvl.100+]", NpcText = "i_stabman [Lvl. 100+]", BossName = "Diavolo [Dungeon]"},
+        {Name = "Dungeon [Lvl.200+]", NpcText = "i_stabman [Lvl. 200+]", BossName = "Jotaro P6 [Dungeon]"},
+    },
+    ShopItems = {
+        {Name = "Rokakaka (2,500c)",         Npc = "MerchantAU",     Option = "Option2"},
+        {Name = "Stand Arrow (3,500c)",      Npc = "MerchantAU",     Option = "Option4"},
+        {Name = "Charged Arrow (50,000c)",   Npc = "Merchantlvl120", Option = "Option2"},
+        {Name = "Dio Diary (1,500,000c)",    Npc = "Merchantlvl120", Option = "Option3"},
+        {Name = "Requiem Arrow (1,500,000c)",Npc = "Merchantlvl120", Option = "Option4"},
+    },
+}
+
+-- ==============================
+--   ระบบภายใน
+-- ==============================
+local Services = {
+    Players             = game:GetService("Players"),
+    Workspace           = game:GetService("Workspace"),
+    ReplicatedStorage   = game:GetService("ReplicatedStorage"),
+    VirtualInputManager = game:GetService("VirtualInputManager"),
+    MarketplaceService  = game:GetService("MarketplaceService"),
+}
+local LocalPlayer = Services.Players.LocalPlayer
+
+function getChar()
+    local char = LocalPlayer.Character
+    if char and char:WaitForChild("HumanoidRootPart",2) and char:WaitForChild("Humanoid",2) then
+        return char
+    end
+    return nil
+end
+
+function fire(remote, ...)
+    if remote and remote:IsA("RemoteEvent") then
+        local args = {...}
+        pcall(function() remote:FireServer(table.unpack(args)) end)
+    end
+end
+
+function tp(cf)
+    local char = getChar()
+    if not char then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local stand = char:FindFirstChild("Stand") and char.Stand:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CFrame = cf
+        hrp.Velocity = Vector3.zero
+        if stand then stand.CFrame = cf; stand.Velocity = Vector3.zero end
+    end
+end
+
+function findNPC(name, text)
+    for _, npc in ipairs(Services.Workspace.Map.NPCs:GetChildren()) do
+        if npc.Name == name then
+            if text then
+                local head = npc:FindFirstChild("Head")
+                if head then
+                    local main = head:FindFirstChild("Main") or head:FindFirstChild("Display")
+                    if main then
+                        local txt = main:FindFirstChild("Text") or (main:FindFirstChild("Frame") and main.Frame:FindFirstChild("TextLabel"))
+                        if txt and txt.Text == text then return npc end
+                    end
+                end
+            else
+                return npc
+            end
+        end
+    end
+    return nil
+end
+
+function findMob(name)
+    for _, mob in ipairs(Services.Workspace.Living:GetChildren()) do
+        if mob.Name == name and mob:FindFirstChild("Humanoid") and mob.Humanoid.Health > 0 then
+            return mob
+        end
+    end
+    return nil
+end
+
+function standUp()
+    local char = getChar()
+    if char then char.Humanoid.Sit = false end
+end
+
+function useSkills(char, skillNames, useAll)
+    if not char or not char:FindFirstChild("StandEvents") then return end
+    local events = char.StandEvents
+    if useAll then
+        for _, ev in ipairs(events:GetChildren()) do
+            if ev:IsA("RemoteEvent") and not table.find({"Block","Quote","Pose","Summon","Heal","Jump","TogglePilot"}, ev.Name) then
+                fire(ev, true)
+            end
+        end
+    else
+        for name, _ in pairs(skillNames) do
+            local ev = events:FindFirstChild(name)
+            if ev then fire(ev, true) end
+        end
+    end
+end
+
+function useItem(itemName)
+    local char = getChar()
+    if not char then return false end
+    local tool = LocalPlayer.Backpack:FindFirstChild(itemName)
+    if not tool then return false end
+    char.Humanoid:UnequipTools()
+    task.wait(0.2)
+    char.Humanoid:EquipTool(tool)
+    task.wait(1)
+    local item = char:FindFirstChild(itemName)
+    if not item then return false end
+    pcall(function() item:Activate() end)
+    task.wait(1)
+    local pp = item:FindFirstChildOfClass("ProximityPrompt")
+    if pp then pcall(function() fireproximityprompt(pp, 1) end) end
+    task.wait(0.3)
+    char.Humanoid:UnequipTools()
+    return true
+end
+
+function switchStandToEmptySlot()
+    local data = LocalPlayer.Data
+    if not data then return false end
+    local level = data.Level.Value
+    local slots = {1,2,4}
+    if level >= 120 then table.insert(slots, 3) end
+    pcall(function()
+        if Services.MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 142794026) then
+            table.insert(slots, 3)
+        end
+    end)
+    pcall(function()
+        if Services.MarketplaceService:UserOwnsGamePassAsync(LocalPlayer.UserId, 146346514) then
+            table.insert(slots, 5)
+        end
+    end)
+    for _, slot in ipairs(slots) do
+        local slotData = data["Slot"..slot.."Stand"]
+        if slotData and slotData.Value == "None" then
+            fire(Services.ReplicatedStorage.Events.SwitchStand, "Slot"..slot)
+            task.wait(1)
+            if data.Stand.Value == "None" then return true end
+        end
+    end
+    return false
+end
+
+-- ==============================
+--   ตัวแปรควบคุม
+-- ==============================
+local isQuest, isAllLevel, isBoss, isStand, isDungeon, isItems = false, false, false, false, false, false
+local selectedQuest   = CONFIG.QuestLevels[1].QuestText
+local selectedBosses  = {}
+local selectedStands  = {}
+local selectedAttrs   = {}
+local selectedDungeon = CONFIG.Dungeons[1].Name
+local selectedItem    = "Stand Arrow"
+local useAllSkills    = false
+local selectedSkills  = {}
+local buyAmount       = 1
+local farmThreads     = {}
+
+local function notify(title, content)
+    Rayfield:Notify({ Title = title, Content = content, Duration = 6 })
+end
+
+local function waitUntil(cond, timeout)
+    local t = 0
+    repeat task.wait(0.3); t += 0.3 until cond() or t >= (timeout or 6)
+end
+
+-- ==============================
+--   Quest data (อิงจาก EduHub u48)
+-- ==============================
+local QUEST_DATA = {
+    ["Bad Gi [Lvl. 1+]"]           = {npcName="Giorno",         range=8,  loadCFrame=CFrame.new(-700.536438,70.0818481,-837.761169,0.087131381,0,-0.996196866,0,1,0,0.996196866,0,0.087131381),         mobName="Bad Gi"},
+    ["Scary Monster [Lvl. 10+]"]   = {npcName="Scared Noob",    range=8,  loadCFrame=CFrame.new(-691.044983,73.0222321,-1062.31665,-0.965929747,0,-0.258804798,0,1,0,0.258804798,0,-0.965929747),        mobName="Scary Monster"},
+    ["Giorno Giovanna [Lvl. 20+]"] = {npcName="Koichi",         range=8,  loadCFrame=CFrame.new(-195.531723,69.9809418,-534.950073,0,0,-1,0,1,0,1,0,0),                                                  mobName="Giorno Giovanna"},
+    ["Rker Dummy [Lvl. 30+]"]      = {npcName="aLLmemester",    range=8,  loadCFrame=CFrame.new(-624.51062,69.9093475,-472.346008,-0.707068563,0,-0.707145572,0,1,0,0.707145572,0,-0.707068563),          mobName="Rker Dummy"},
+    ["Yoshikage Kira [Lvl. 40+]"]  = {npcName="Okayasu",        range=8,  loadCFrame=CFrame.new(-534.294983,70.0820007,-1039.84399,1,0,0,0,1,0,0,0,1),                                                   mobName="Yoshikage Kira"},
+    ["Dio Over Heaven [Lvl. 50+]"] = {npcName="Joseph Joestar", range=10, loadCFrame=CFrame.new(33.1749992,97.1800003,-884.434021,-1.1920929e-7,0,1.00000012,0,1,0,-1.00000012,0,-1.1920929e-7),          mobName="Dio Over Heaven"},
+    ["Angelo [Lvl. 75+]"]          = {npcName="Josuke",         range=10, loadCFrame=CFrame.new(-589.617004,72.461998,-651.528992,0.258864343,0,-0.965913713,0,1,0,0.965913713,0,0.258864343),            mobName="Angelo"},
+    ["Alien [Lvl. 100+]"]          = {npcName="Rohan",          range=10, loadCFrame=CFrame.new(-206.270004,73.0220032,-712.692993,1,0,0,0,1,0,0,0,1),                                                    mobName="Alien"},
+    ["Jotaro Part 4 [Lvl. 125+]"]  = {npcName="DIO",            range=10, loadCFrame=CFrame.new(-384.623993,69.9909973,-73.7870026,-0.134667635,0,0.990891039,0,1,0,-0.990891039,0,-0.134667635),         mobName="Jotaro Part 4"},
+    ["Kakyoin [Lvl. 150+]"]        = {npcName="Muhammed Avdol", range=10, loadCFrame=CFrame.new(-240.203003,69.9810028,-166.317001,0.79861635,0,0.601840496,0,1,0,-0.601840496,0,0.79861635),             mobName="Kakyoin"},
+    ["Jungle Bandit [Lvl. 175+]"]  = {npcName="Giorno",         range=12, loadCFrame=CFrame.new(-504.627014,69.9229965,13.2069998,0.996191859,0,0.0871884301,0,1,0,-0.0871884301,0,0.996191859),          mobName="Jungle Bandit"},
+    ["Sewer Vampire [Lvl. 200+]"]  = {npcName="Zeppeli",        range=12, loadCFrame=CFrame.new(-5235.70898,-447.78125,-3740.56592,0.996191859,0,0.0871884301,0,1,0,-0.0871884301,0,0.996191859),          mobName="Sewer Vampire"},
+    ["Pillerman [Lvl. 275+]"]      = {npcName="Young Joseph",   range=12, loadCFrame=CFrame.new(-698.304993,69.6139984,-129.304001,0.996191859,0,0.0871884301,0,1,0,-0.0871884301,0,0.996191859),         mobName="Pillerman"},
+    ["Jotaro OVA [Lvl. 450+]"]     = {npcName="DIO OVA",        range=12, loadCFrame=CFrame.new(-698.304993,69.6139984,-129.304001,0.996191859,0,0.0871884301,0,1,0,-0.0871884301,0,0.996191859),         mobName="Jotaro OVA"},
+}
+
+-- หา Giorno NPC ที่ถูกตัว (Bad Gi vs Jungle Bandit) เหมือน EduHub u55
+local function findGiornoNPC(questText)
+    for _, npc in ipairs(Services.Workspace.Map.NPCs:GetChildren()) do
+        if npc.Name == "Giorno" and npc:FindFirstChild("Head") and npc.Head:FindFirstChild("Main") and npc.Head.Main:FindFirstChild("Text") then
+            local txt = npc.Head.Main.Text.Text
+            if questText == "Bad Gi [Lvl. 1+]" and txt == "Giorno Giovanna [Lvl. 1+]" then return npc end
+            if questText == "Jungle Bandit [Lvl. 175+]" and txt == "Giorno Giovanna [Lvl. 175+]" then return npc end
+        end
+    end
+    return nil
+end
+
+-- teleport ไปเหนือมอน เหมือน EduHub u69
+local function tpToMob(mob, range)
+    local char = getChar()
+    if not char or not mob or not mob.PrimaryPart then return end
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    local stand = char:FindFirstChild("Stand") and char.Stand:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        pcall(function()
+            local cf = mob.PrimaryPart.CFrame * CFrame.new(0, range, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+            hrp.CFrame = cf
+            hrp.Velocity = Vector3.zero
+            if stand then stand.CFrame = cf; stand.Velocity = Vector3.zero end
+        end)
+    end
+end
+
+local farmHeartbeat = nil
+
+local function genericFarmLoop(questData)
+    if farmHeartbeat then farmHeartbeat:Disconnect() end
+
+    local qd = QUEST_DATA[questData.QuestText]
+    if not qd then return end
+
+    -- เทเลไปจุดเกิดมอนทันที (เหมือน EduHub)
+    local char = getChar()
+    if char then
+        pcall(function() char.HumanoidRootPart.CFrame = qd.loadCFrame end)
+    end
+
+    local loaded = false
+    local lastQuestTick = 0
+
+    farmHeartbeat = game:GetService("RunService").Heartbeat:Connect(function()
+        if not (isQuest or isAllLevel) then
+            farmHeartbeat:Disconnect()
+            farmHeartbeat = nil
+            return
+        end
+
+        char = getChar()
+        if not char then return end
+
+        -- โหลด CFrame ครั้งแรกเท่านั้น (เหมือน EduHub u70)
+        if not loaded then
+            pcall(function() char.HumanoidRootPart.CFrame = qd.loadCFrame end)
+            loaded = true
+        end
+
+        -- fire Done/QuestDone ทุก 0.2 วิ (เหมือน EduHub u72)
+        local now = tick()
+        if now - lastQuestTick >= 0.2 then
+            lastQuestTick = now
+            -- รับเควส (เหมือน EduHub u85)
+            if questData.QuestText == "Bad Gi [Lvl. 1+]" or questData.QuestText == "Jungle Bandit [Lvl. 175+]" then
+                local npc = findGiornoNPC(questData.QuestText)
+                if npc then
+                    pcall(function() npc.Done:FireServer() end)
+                    pcall(function() npc.QuestDone:FireServer() end)
+                end
+            else
+                for _, npc in ipairs(Services.Workspace.Map.NPCs:GetChildren()) do
+                    if npc.Name == qd.npcName then
+                        pcall(function() npc.Done:FireServer() end)
+                        pcall(function() npc.QuestDone:FireServer() end)
+                        break
+                    end
+                end
+            end
+        end
+
+        -- หามอน
+        local mob = findMob(qd.mobName)
+        if mob then
+            tpToMob(mob, qd.range)
+            if char:FindFirstChild("Aura") and not char.Aura.Value then
+                pcall(function() fire(char.StandEvents.Summon) end)
+            end
+            useSkills(char, selectedSkills, useAllSkills)
+        else
+            -- มอนตาย → วาปขึ้นฟ้าให้มอนเกิดเร็ว (เหมือน EduHub)
+            char.Humanoid.Sit = false
+            pcall(function()
+                char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame + Vector3.new(0, 100, 0)
+            end)
+        end
+    end)
+end
+
+-- ==============================
+--   สร้าง Window
+-- ==============================
+local Window = Rayfield:CreateWindow({
+    Name = "Ares HUB : Standing Upright",
+    LoadingTitle = "Made by Ai na ja",
+    LoadingSubtitle = "Love Aresu",
+    Theme = "Default",
+    DisableRayfieldPrompts = false,
+    DisableBuildWarnings = false,
+    ConfigurationSaving = { Enabled = false },
+    KeySystem = false,
+})
+
+-- ==============================
+--   Tab 1: Farming & Quests
+-- ==============================
+local TabQuest = Window:CreateTab("Farming & Quests", 4483362458)
+
+local questNames = {}
+for _, q in ipairs(CONFIG.QuestLevels) do table.insert(questNames, q.QuestText) end
+
+TabQuest:CreateDropdown({
+    Name = "Select Quest",
+    Options = questNames,
+    CurrentOption = {questNames[1]},
+    MultipleOptions = false,
+    Callback = function(v) selectedQuest = v[1] or v end
+})
+
+TabQuest:CreateToggle({
+    Name = "Start Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        isQuest = v
+        if v then
+            if isAllLevel then
+                notify("Error", "ปิด Auto Farm All ก่อนสิ!")
+                isQuest = false; return
+            end
+            local data
+            for _, q in ipairs(CONFIG.QuestLevels) do
+                if q.QuestText == selectedQuest then data = q; break end
+            end
+            if data then
+                farmThreads.quest = task.spawn(genericFarmLoop, data)
+            end
+        else
+            isQuest = false
+            if farmHeartbeat then farmHeartbeat:Disconnect(); farmHeartbeat = nil end
+            if farmThreads.quest then pcall(function() task.cancel(farmThreads.quest) end) end
+            standUp()
+        end
+    end
+})
+
+-- ==============================
+--   Tab 2: Auto Farm All
+-- ==============================
+local TabAuto = Window:CreateTab("Auto Farm All", 4483362458)
+
+TabAuto:CreateToggle({
+    Name = "Auto Farm All Levels",
+    CurrentValue = false,
+    Callback = function(v)
+        isAllLevel = v
+        if v then
+            if isQuest then
+                notify("Error", "ปิด Farming & Quests ก่อนสิ!")
+                isAllLevel = false; return
+            end
+            farmThreads.all = task.spawn(function()
+                while isAllLevel do
+                    local level = LocalPlayer.Data.Level.Value
+                    local data
+                    for _, q in ipairs(CONFIG.QuestLevels) do
+                        if level >= q.MinLevel and level <= q.MaxLevel then data = q; break end
+                    end
+                    if not data then
+                        task.wait(2)
+                    else
+                        loaded = false
+                        genericFarmLoop(data)
+                        task.wait(0.5)
+                    end
+                end
+            end)
+        else
+            isAllLevel = false
+            if farmHeartbeat then farmHeartbeat:Disconnect(); farmHeartbeat = nil end
+            if farmThreads.all then pcall(function() task.cancel(farmThreads.all) end) end
+            standUp()
+        end
+    end
+})
+
+-- ==============================
+--   Tab 3: Boss Farm
+-- ==============================
+local TabBoss = Window:CreateTab("Boss Farm", 4483362458)
+
+TabBoss:CreateDropdown({
+    Name = "Select Bosses",
+    Options = CONFIG.BossNames,
+    CurrentOption = {},
+    MultipleOptions = true,
+    Callback = function(v)
+        selectedBosses = {}
+        for _, b in ipairs(v) do table.insert(selectedBosses, b) end
+    end
+})
+
+TabBoss:CreateToggle({
+    Name = "Start Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        isBoss = v
+        if v then
+            if #selectedBosses == 0 then
+                notify("Error", "เลือกบอสก่อนสิ!")
+                isBoss = false; return
+            end
+            farmThreads.boss = task.spawn(function()
+                while isBoss do
+                    local char = getChar()
+                    if not char then task.wait(1); continue end
+                    local found = false
+                    for _, bossName in ipairs(selectedBosses) do
+                        local boss = findMob(bossName)
+                        if boss then
+                            found = true
+                            local root = boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
+                            if root then
+                                tp(root.CFrame * CFrame.new(0,12,0) * CFrame.Angles(math.rad(-90),0,0))
+                                if char:FindFirstChild("Aura") and not char.Aura.Value then fire(char.StandEvents.Summon) end
+                                useSkills(char, selectedSkills, useAllSkills)
+                            end
+                        end
+                    end
+                    if not found then
+                        tp(char.HumanoidRootPart.CFrame + Vector3.new(0,50,0))
+                        task.wait(3)
+                    end
+                    task.wait()
+                end
+            end)
+        else
+            if farmThreads.boss then task.cancel(farmThreads.boss) end
+            standUp()
+        end
+    end
+})
+
+-- ==============================
+--   Tab 4: Stand Farm
+-- ==============================
+local TabStand = Window:CreateTab("Stand Farm", 4483362458)
+
+TabStand:CreateSection("Storage")
+
+TabStand:CreateButton({
+    Name = "Open Storage",
+    Callback = function()
+        pcall(function()
+            Services.Workspace.Map.NPCs.admpn.Done:FireServer()
+        end)
+        notify("Storage", "เปิด Storage แล้ว!")
+    end
+})
+
+TabStand:CreateSection("Stand Farm")
+
+local standNames = {}
+for k, _ in pairs(CONFIG.StandValues) do table.insert(standNames, k) end
+
+TabStand:CreateDropdown({
+    Name = "Stands",
+    Options = standNames,
+    CurrentOption = {},
+    MultipleOptions = true,
+    Callback = function(v)
+        selectedStands = {}
+        for _, s in ipairs(v) do table.insert(selectedStands, s) end
+    end
+})
+
+TabStand:CreateDropdown({
+    Name = "Attributes",
+    Options = CONFIG.AttributesWanted,
+    CurrentOption = {},
+    MultipleOptions = true,
+    Callback = function(v)
+        selectedAttrs = {}
+        for _, a in ipairs(v) do table.insert(selectedAttrs, a) end
+    end
+})
+
+TabStand:CreateDropdown({
+    Name = "Item",
+    Options = {"Stand Arrow", "Charged Arrow", "Kars Mask"},
+    CurrentOption = {"Stand Arrow"},
+    MultipleOptions = false,
+    Callback = function(v) selectedItem = v[1] or v end
+})
+
+TabStand:CreateToggle({
+    Name = "Start Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        isStand = v
+        if v then
+            if #selectedStands == 0 and #selectedAttrs == 0 then
+                notify("Error", "เลือกสแตนด์หรือแอตทริบอย่างน้อยหนึ่งอย่างสิ!")
+                isStand = false; return
+            end
+            farmThreads.stand = task.spawn(function()
+                local data = LocalPlayer:WaitForChild("Data")
+
+                local CONFIRM_ATTRS = {
+                    "Daemon","Invincible","Tragic","Glass Cannon",
+                    "Hacker","Legendary","Ascended","Buns","Helpful"
+                }
+
+                local function waitUntilStand(cond, timeout)
+                    local t = 0
+                    repeat task.wait(0.3); t += 0.3 until cond() or t >= (timeout or 6)
+                end
+
+                local function needsConfirm(attr)
+                    for _, a in ipairs(CONFIRM_ATTRS) do
+                        if a == attr then return true end
+                    end
+                    return false
+                end
+
+                local function handleConfirmDialog()
+                    local btn = nil
+                    local waited = 0
+                    repeat
+                        task.wait(0.2)
+                        waited += 0.2
+                        for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                            if gui:IsA("ScreenGui") then
+                                for _, obj in ipairs(gui:GetDescendants()) do
+                                    if obj:IsA("TextButton") then
+                                        local txt = obj.Text:lower()
+                                        if txt == "yes" or txt == "confirm" or txt == "ยืนยัน" then
+                                            btn = obj
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    until btn ~= nil or waited >= 4
+
+                    if not btn then return end
+                    task.wait(2.5)
+                    pcall(function() btn.MouseButton1Click:Fire() end)
+                    task.wait(0.5)
+                end
+
+                while isStand do
+                    task.wait(0.3)
+                    local char = getChar()
+                    if not char then task.wait(1); continue end
+
+                    local curStand = data.Stand.Value
+                    local curAttr  = data.Attri.Value
+
+                    if curStand ~= "None" then
+                        local wantedStand = #selectedStands == 0
+                        for _, name in ipairs(selectedStands) do
+                            if CONFIG.StandValues[name] == curStand then wantedStand = true; break end
+                        end
+                        local wantedAttr = #selectedAttrs == 0
+                        for _, attr in ipairs(selectedAttrs) do
+                            if attr == curAttr then wantedAttr = true; break end
+                        end
+
+                        if wantedStand and wantedAttr then
+                            notify("Got It!", "ได้แล้ว: "..curStand.." ("..curAttr..")")
+                            isStand = false; return
+                        end
+
+                        local roka = useItem("Rokakaka")
+                        if not roka then
+                            if not switchStandToEmptySlot() then
+                                notify("Error", "ไม่มี Rokakaka หรือ Slot ว่าง!")
+                                isStand = false; return
+                            end
+                        end
+
+                        if needsConfirm(curAttr) then
+                            handleConfirmDialog()
+                        end
+
+                        waitUntilStand(function() return data.Stand.Value == "None" end, 8)
+                        if data.Stand.Value ~= "None" then
+                            local btn2 = nil
+                            for _, gui in ipairs(LocalPlayer.PlayerGui:GetChildren()) do
+                                if gui:IsA("ScreenGui") then
+                                    for _, obj in ipairs(gui:GetDescendants()) do
+                                        if obj:IsA("TextButton") and obj.Text:lower() == "yes" then
+                                            btn2 = obj
+                                        end
+                                    end
+                                end
+                            end
+                            if btn2 then pcall(function() btn2.MouseButton1Click:Fire() end) end
+                            task.wait(1); continue
+                        end
+                    end
+
+                    if not useItem(selectedItem) then
+                        notify("Warning", "ไม่มี "..selectedItem.." ในกระเป๋า! รอ 5 วิ...")
+                        task.wait(5); continue
+                    end
+
+                    waitUntilStand(function() return data.Stand.Value ~= "None" end, 6)
+                end
+            end)
+        else
+            if farmThreads.stand then task.cancel(farmThreads.stand) end
+        end
+    end
+})
+
+-- ==============================
+--   Tab 5: Shop
+-- ==============================
+local TabShop = Window:CreateTab("Shop", 4483362458)
+
+TabShop:CreateInput({
+    Name = "Buy Amount",
+    CurrentValue = "1",
+    PlaceholderText = "จำนวน",
+    RemoveTextAfterFocusLost = false,
+    Callback = function(v) buyAmount = tonumber(v) or 1 end
+})
+
+for _, item in ipairs(CONFIG.ShopItems) do
+    local itm = item
+    TabShop:CreateButton({
+        Name = itm.Name,
+        Callback = function()
+            for i = 1, buyAmount do
+                fire(Services.ReplicatedStorage.Events.BuyItem, itm.Npc, itm.Option)
+            end
+        end
+    })
+end
+
+-- ==============================
+--   Tab 6: Dungeon
+-- ==============================
+local TabDungeon = Window:CreateTab("Dungeon", 4483362458)
+
+local dNames = {}
+for _, d in ipairs(CONFIG.Dungeons) do table.insert(dNames, d.Name) end
+
+TabDungeon:CreateDropdown({
+    Name = "Select Dungeon",
+    Options = dNames,
+    CurrentOption = {dNames[1]},
+    MultipleOptions = false,
+    Callback = function(v) selectedDungeon = v[1] or v end
+})
+
+TabDungeon:CreateToggle({
+    Name = "Start Farm",
+    CurrentValue = false,
+    Callback = function(v)
+        isDungeon = v
+        if v then
+            if isQuest or isAllLevel then
+                notify("Error", "ปิดฟาร์มอื่นก่อนสิ!")
+                isDungeon = false; return
+            end
+            farmThreads.dungeon = task.spawn(function()
+                local dungeonData
+                for _, d in ipairs(CONFIG.Dungeons) do
+                    if d.Name == selectedDungeon then dungeonData = d; break end
+                end
+                if not dungeonData then return end
+                local npc = findNPC("i_stabman", dungeonData.NpcText)
+                while isDungeon do
+                    local char = getChar()
+                    if not char then task.wait(1); continue end
+                    local questGui = LocalPlayer.PlayerGui:FindFirstChild("QuestGui")
+                    if questGui and questGui:FindFirstChild("Active") and questGui.Active.Value then
+                        local boss = findMob(dungeonData.BossName)
+                        if boss then
+                            local root = boss:FindFirstChild("HumanoidRootPart") or boss.PrimaryPart
+                            if root then
+                                tp(root.CFrame * CFrame.new(0,15,0) * CFrame.Angles(math.rad(-90),0,0))
+                                if char:FindFirstChild("Aura") and not char.Aura.Value then fire(char.StandEvents.Summon) end
+                                useSkills(char, selectedSkills, useAllSkills)
+                            end
+                        else
+                            task.wait(1)
+                        end
+                    else
+                        if npc then
+                            tp(npc.HumanoidRootPart.CFrame * CFrame.new(0,2,3))
+                            local pp = npc:FindFirstChildOfClass("ProximityPrompt")
+                            if pp then fireproximityprompt(pp, 20) end
+                            if npc:FindFirstChild("Done") then fire(npc.Done) end
+                            task.wait(2)
+                        end
+                    end
+                    task.wait()
+                end
+            end)
+        else
+            if farmThreads.dungeon then task.cancel(farmThreads.dungeon) end
+            standUp()
+        end
+    end
+})
+
+-- ==============================
+--   Tab 7: Items
+-- ==============================
+local TabItems = Window:CreateTab("Items", 4483362458)
+
+TabItems:CreateToggle({
+    Name = "Farm Items",
+    CurrentValue = false,
+    Callback = function(v)
+        isItems = v
+        if v then
+            if isQuest or isAllLevel or isBoss or isDungeon then
+                notify("Error", "ปิดฟาร์มอื่นก่อน!")
+                isItems = false; return
+            end
+            farmThreads.items = task.spawn(function()
+                while isItems do
+                    local char = getChar()
+                    if not char then task.wait(1); continue end
+                    local hrp = char.HumanoidRootPart
+                    for _, obj in ipairs(Services.Workspace.Vfx:GetDescendants()) do
+                        if obj:IsA("BasePart") and (obj.Name == "Handle" or obj.Name:find("Item")) and obj.Parent then
+                            local pp = obj.Parent:FindFirstChild("ProximityPrompt") or obj:FindFirstChild("ProximityPrompt")
+                            if pp then
+                                local mag = (hrp.Position - obj.Position).Magnitude
+                                if mag > 5 then
+                                    pcall(function() hrp.CFrame = CFrame.new(obj.Position + Vector3.new(0,3,0)) end)
+                                    task.wait(0.5)
+                                end
+                                if (hrp.Position - obj.Position).Magnitude <= 5 then
+                                    fireproximityprompt(pp, 20)
+                                    task.wait(0.3)
+                                end
+                            end
+                        end
+                    end
+                    local itemsFolder = Services.Workspace:FindFirstChild("Items")
+                    if itemsFolder then
+                        for _, obj in ipairs(itemsFolder:GetChildren()) do
+                            if obj:IsA("BasePart") and obj:FindFirstChild("ProximityPrompt") then
+                                local mag = (hrp.Position - obj.Position).Magnitude
+                                if mag > 5 then
+                                    pcall(function() hrp.CFrame = CFrame.new(obj.Position + Vector3.new(0,3,0)) end)
+                                    task.wait(0.5)
+                                end
+                                if (hrp.Position - obj.Position).Magnitude <= 5 then
+                                    fireproximityprompt(obj.ProximityPrompt, 20)
+                                    task.wait(0.3)
+                                end
+                            end
+                        end
+                    end
+                    task.wait(0.5)
+                end
+            end)
+        else
+            if farmThreads.items then task.cancel(farmThreads.items) end
+            standUp()
+        end
+    end
+})
+
+-- ==============================
+--   Tab 8: Settings
+-- ==============================
+local TabSettings = Window:CreateTab("Settings", 4483362458)
+
+TabSettings:CreateToggle({
+    Name = "Anti-AFK",
+    CurrentValue = false,
+    Callback = function(v)
+        if v then
+            farmThreads.antiafk = task.spawn(function()
+                while farmThreads.antiafk do
+                    if getChar() then
+                        game:GetService("VirtualInputManager"):SendKeyEvent(true, "W", false, game)
+                        task.wait(1)
+                        game:GetService("VirtualInputManager"):SendKeyEvent(false, "W", false, game)
+                    end
+                    task.wait(299)
+                end
+            end)
+        else
+            if farmThreads.antiafk then task.cancel(farmThreads.antiafk); farmThreads.antiafk = nil end
+        end
+    end
+})
+
+TabSettings:CreateToggle({
+    Name = "Use All Skills",
+    CurrentValue = false,
+    Callback = function(v) useAllSkills = v end
+})
+
+-- ==============================
+--   Refresh Skills (แก้ใหม่)
+--   Rayfield ใช้ :Set() แทน SetValues
+--   สร้าง dropdown ก่อน เก็บ ref แล้ว refresh ทีหลัง
+-- ==============================
+local skillDropdown = TabSettings:CreateDropdown({
+    Name = "Select Skills",
+    Options = {},
+    CurrentOption = {},
+    MultipleOptions = true,
+    Callback = function(v)
+        selectedSkills = {}
+        for _, s in ipairs(v) do selectedSkills[s] = true end
+    end
+})
+
+TabSettings:CreateButton({
+    Name = "Refresh Skill List",
+    Callback = function()
+        local char = getChar()
+        if not char or not char:FindFirstChild("StandEvents") then
+            notify("Skills", "เรียกสแตนด์ก่อนแล้วกดใหม่")
+            return
+        end
+        local list = {}
+        for _, ev in ipairs(char.StandEvents:GetChildren()) do
+            if ev:IsA("RemoteEvent") and not table.find(
+                {"Block","Quote","Pose","Summon","Heal","Jump","TogglePilot"}, ev.Name
+            ) then
+                table.insert(list, ev.Name)
+            end
+        end
+        -- อัปเดต options ใน dropdown โดยไม่ select ให้
+        pcall(function() skillDropdown:Set(list) end)
+        pcall(function() skillDropdown:Refresh(list, false) end)
+        notify("Skills", "Refresh แล้ว: "..#list.." skills — เลือกเองใน Select Skills")
+    end
+})
+
+notify("ควย", "ลองลั่น")

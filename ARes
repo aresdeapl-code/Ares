@@ -538,10 +538,26 @@ TabStand:CreateSection("Storage")
 TabStand:CreateButton({
     Name = "Open Storage",
     Callback = function()
-        pcall(function()
-            Services.Workspace.Map.NPCs.admpn.Done:FireServer()
-        end)
-        notify("Storage", "เปิด Storage แล้ว!")
+        local npc = Services.Workspace.Map.NPCs:FindFirstChild("cymekal101")
+        if not npc then
+            notify("Error", "ไม่เจอ NPC cymekal101")
+            return
+        end
+        local hrp = npc:FindFirstChild("HumanoidRootPart") or npc.PrimaryPart
+        if hrp then
+            tp(hrp.CFrame * CFrame.new(0, 0, 3))
+            task.wait(0.3)
+        end
+        local pp = nil
+        for _, v in ipairs(npc:GetDescendants()) do
+            if v:IsA("ProximityPrompt") then pp = v; break end
+        end
+        if pp then
+            pcall(function() fireproximityprompt(pp, 1) end)
+            notify("Storage", "เปิด Storage แล้ว!")
+        else
+            notify("Error", "ไม่เจอ ProximityPrompt")
+        end
     end
 })
 
@@ -610,7 +626,7 @@ TabStand:CreateToggle({
                     return false
                 end
 
-                local function handleConfirmDialog()
+                local function handleConfirmDialog(waitTime)
                     local btn = nil
                     local waited = 0
                     repeat
@@ -632,15 +648,15 @@ TabStand:CreateToggle({
 
                     if not btn then return end
 
-                    -- รอ 2.5 วิ ให้เกมปลดล็อคปุ่ม
-                    task.wait(2.5)
+                    -- รอตามที่กำหนด (2.5 วิ = ที่ต้องการ, 0 = ไม่ต้องการกดทันที)
+                    if waitTime and waitTime > 0 then
+                        task.wait(waitTime)
+                    end
 
-                    -- ลองกดทุกวิธี
                     pcall(function() btn.MouseButton1Click:Fire() end)
                     task.wait(0.1)
                     pcall(function() btn.Activated:Fire() end)
                     task.wait(0.1)
-                    -- simulate real mouse click ผ่าน position
                     pcall(function()
                         local pos = btn.AbsolutePosition + btn.AbsoluteSize / 2
                         game:GetService("VirtualInputManager"):SendMouseButtonEvent(pos.X, pos.Y, 0, true, game, 0)
@@ -683,7 +699,12 @@ TabStand:CreateToggle({
                         end
 
                         if needsConfirm(curAttr) then
-                            handleConfirmDialog()
+                            -- ถ้า attr นี้เป็นที่ต้องการ รอ 2.5 วิ / ถ้าไม่ต้องการกดทันที
+                            local isWantedAttr = false
+                            for _, attr in ipairs(selectedAttrs) do
+                                if attr == curAttr then isWantedAttr = true; break end
+                            end
+                            handleConfirmDialog(isWantedAttr and 2.5 or 0)
                         end
 
                         -- ถอด Rokakaka หลัง dialog ปิดแล้ว
